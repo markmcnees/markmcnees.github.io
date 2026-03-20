@@ -293,8 +293,13 @@ select.inp{-webkit-appearance:none;appearance:none;background-image:url("data:im
     </div>
     <div class="card" style="border:2px solid #e4002b22;">
       <div class="ctitle"><span class="bar" style="background:var(--loss);"></span>Close Season</div>
-      <p style="font-size:13px;color:var(--gray);margin-bottom:12px;">Archive this season's results and start fresh. Players are kept — weeks and results are cleared. Requires admin PIN.</p>
+      <p style="font-size:13px;color:var(--gray);margin-bottom:12px;">Archive this season's results and start fresh. Players, weeks, and results are saved to Past Seasons. Requires admin PIN.</p>
       <button class="btn btn-w" style="background:#e4002b;color:#fff;" onclick="promptCloseSeason()">🏁 Close &amp; Archive Season</button>
+    </div>
+    <div class="card" style="border:2px solid #88888844;">
+      <div class="ctitle"><span class="bar" style="background:#888;"></span>Reset Season</div>
+      <p style="font-size:13px;color:var(--gray);margin-bottom:12px;">Wipe all weeks, results, and players without archiving. Use this to start completely fresh. Requires admin PIN.</p>
+      <button class="btn btn-w" style="background:#555;color:#fff;" onclick="promptResetSeason()">🔄 Reset &amp; Start Over</button>
     </div>
     <div class="card">
       <div class="ctitle"><span class="bar"></span>Past Seasons</div>
@@ -588,7 +593,7 @@ function refreshTab(t){
   if(t==='standings') renderStandings();
 
   else if(t==='planner'){renderRoster();renderPlannerCfg();loadWeekDetail();renderArchives();}
-  else if(t==='score') loadLive();
+  else if(t==='score') refreshLive();
 }
 
 // ─── STATS ───
@@ -722,6 +727,40 @@ function removePlayer(id){const p=gP(id);if(p){fbDel(SIDE+'/players/'+id);toast(
 function toggleActive(id){const p=gP(id);if(p)fbSet(SIDE+'/players/'+id+'/active',p.active===false);}
 
 // ─── SEASON CONFIG ───
+
+function deleteWeek(wid){
+  if(!confirm('Delete this week and all its results? This cannot be undone.'))return;
+  Object.entries(D[SIDE].results||{}).forEach(([rid,r])=>{
+    if(r&&r.weekId===wid) fbDel(SIDE+'/results/'+rid);
+  });
+  fbDel(SIDE+'/weeks/'+wid);
+  toast('Week deleted');
+  $('week-detail').innerHTML='';
+  fillWeekSels();
+}
+
+function promptResetSeason(){
+  _pinAction='resetseason';_pinEntry='';updatePinDots();
+  $('pin-error').textContent='';
+  $('pin-modal-title').textContent='Admin PIN — Reset Season';
+  $('pin-modal').classList.add('on');
+}
+
+async function doResetSeason(){
+  await db.ref(DB_ROOT+'/'+SIDE+'/weeks').remove();
+  await db.ref(DB_ROOT+'/'+SIDE+'/results').remove();
+  await db.ref(DB_ROOT+'/'+SIDE+'/players').remove();
+  const oldCfg=D[SIDE].config||{};
+  await db.ref(DB_ROOT+'/'+SIDE+'/config').set({
+    courts:oldCfg.courts||2,
+    dayOfWeek:oldCfg.dayOfWeek??1,
+    winScore:oldCfg.winScore||15
+  });
+  $('week-detail').innerHTML='';
+  toast('Season reset — ready for new players and dates.');
+  renderPlannerCfg();
+}
+
 function saveSeasonCfg(){
   const cfg={
     dayOfWeek:parseInt($('cfg-day').value),
@@ -785,6 +824,9 @@ function loadWeekDetail(){
   const subNames=(subs||[]).map(s=>`${s.name} ➜ ${pN(s.forPlayerId)}`);
   if(subNames.length) h+=`<div class="chip-grp">${subNames.map(n=>`<span class="abs-chip sub-chip">🔄 ${n}</span>`).join('')}</div>`;
   h+='</div>';
+  h+=`<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">`
+    +`<button class="btn btn-g btn-sm" style="color:#c00;border-color:#c00;" `
+    +`onclick="deleteWeek('${wid}')">🗑️ Delete This Week</button></div>`;
   if(week.rounds&&week.rounds.length){
     week.rounds.forEach(rd=>{
       h+=`<div class="rblock"><div class="rtitle">Round ${rd.round}</div>`;
@@ -954,8 +996,32 @@ Use the exact player IDs provided. Return only the JSON array.`;
 
 // ─── LIVE SCORING ───
 function loadLive(){
+  // Full init — resets round to 1. Called when user picks a week.
   const wid=$('live-sel').value;
   liveWeek=wid;liveRound=1;
+  // Clear in-progress scores when explicitly loading a new week
+  Object.keys(lscore).forEach(k=>delete lscore[k]);
+  renderWeekActions();
+  renderRoundPills();
+  renderLiveCourts();
+}
+function refreshLive(){
+  // Lightweight refresh triggered by Firebase — preserves liveRound and lscore
+  if(!liveWeek)return;
+  // Snapshot current in-progress input values into lscore before re-render
+  const week=D[SIDE].weeks[liveWeek];
+  if(week){
+    const rd=(week.rounds||[]).find(r=>r.round===liveRound);
+    if(rd)(rd.courts||[]).forEach((_,idx)=>{
+      const us=parseInt($('su-'+idx)?.value);
+      const them=parseInt($('st-'+idx)?.value);
+      if(!isNaN(us)||!isNaN(them)){
+        if(!lscore[idx])lscore[idx]={us:0,them:0};
+        if(!isNaN(us))lscore[idx].us=us;
+        if(!isNaN(them))lscore[idx].them=them;
+      }
+    });
+  }
   renderWeekActions();
   renderRoundPills();
   renderLiveCourts();
@@ -1425,6 +1491,7 @@ function pinTap(v){
       _pinEntry='';updatePinDots();
       if(_pinAction==='cancel') doCancelNight();
       else if(_pinAction==='closeseason') doCloseSeason();
+      else if(_pinAction==='resetseason') doResetSeason();
       else if(_pinAction==='addplayer') _doAddPlayer();
       else if(_pinAction==='planner') _openPlanner();
     }else{
