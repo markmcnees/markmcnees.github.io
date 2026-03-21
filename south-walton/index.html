@@ -5564,13 +5564,13 @@ function pgdSaveNotes(){
 // ============================================================
 function getDualRecord(){
   let w=0,l=0;
-  // Dual W-L: from schedule (dual-level wins)
-  (D.schedule||[]).forEach(g=>{if(g.scoreUs!=null&&g.scoreThem!=null&&g.scoreUs!==''&&g.scoreThem!==''){parseInt(g.scoreUs)>parseInt(g.scoreThem)?w++:l++;}});
+  // Dual W-L: from schedule (dual-level wins, exclude scrimmages)
+  (D.schedule||[]).forEach(g=>{if(g.type==='scrimmage')return;if(g.scoreUs!=null&&g.scoreThem!=null&&g.scoreUs!==''&&g.scoreThem!==''){parseInt(g.scoreUs)>parseInt(g.scoreThem)?w++:l++;}});
 
-  // Match W-L (court-level): sum scoreUs/scoreThem from schedule
-  // Schedule stores court scores per dual (e.g. 4-1 means SW won 4 courts)
+  // Match W-L (court-level): sum scoreUs/scoreThem from schedule, exclude scrimmages
   let cw=0,cl=0;
   (D.schedule||[]).forEach(g=>{
+    if(g.type==='scrimmage')return;
     if(g.scoreUs!=null&&g.scoreThem!=null&&g.scoreUs!==''&&g.scoreThem!==''){
       cw+=parseInt(g.scoreUs)||0;
       cl+=parseInt(g.scoreThem)||0;
