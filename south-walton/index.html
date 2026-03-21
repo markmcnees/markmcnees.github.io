@@ -362,7 +362,7 @@ body{font-family:'Barlow',sans-serif;background:var(--cream);color:var(--black);
 <!-- LOGIN SCREEN -->
 <div class="login-overlay" id="login-overlay">
   <div class="login-box">
-    <div class="login-logo"><span class="crown">🌊</span> SW Beach</div>
+    <div class="login-logo" style="flex-direction:column;align-items:center;gap:6px;"><img src="seahawks-logo.png" style="height:64px;width:auto;" alt="Seahawks"><span>SW Beach</span></div>
     <div class="login-sub">2026 Beach Volleyball Season</div>
     <div class="login-toggle">
       <button class="login-toggle-btn active" onclick="switchLogin('coach')">Coach</button>
@@ -410,7 +410,7 @@ body{font-family:'Barlow',sans-serif;background:var(--cream);color:var(--black);
 <div id="app-wrapper" style="display:none;">
 <div class="header">
   <div class="header-top">
-    <h1><span class="crown">🌊</span> SW Beach <span class="sync-dot" id="sync-dot"></span></h1>
+    <h1><span class="crown"><img src="seahawks-logo.png" style="height:28px;width:auto;vertical-align:middle;" alt="SW"></span> SW Beach <span class="sync-dot" id="sync-dot"></span></h1>
     <div class="header-user">
       <span class="header-username" id="header-username"></span>
       <button class="logout-btn" onclick="logout()">Logout</button>
@@ -1136,9 +1136,17 @@ function listenData(){if(!db)return;
 }
 function seedDB(){if(!db)return;
   const u={};
-  DEF_P.forEach(p=>{u[DB_ROOT+'/players/'+p.id]=JSON.parse(JSON.stringify(p));});
+  DEF_P.forEach(p=>{
+    u[DB_ROOT+'/players/'+p.id]=JSON.parse(JSON.stringify(p));
+    // Also seed profiles node so profiles.html has correct players
+    u['south_walton/players/'+p.id]=JSON.parse(JSON.stringify(p));
+  });
   DEF_M.forEach(m=>{u[DB_ROOT+'/matches/'+m.id]=JSON.parse(JSON.stringify(m));});
   db.ref().update(u);
+  // Clear any stale south_walton data except players
+  db.ref('south_walton/matches').remove();
+  db.ref('south_walton/gamedays').remove();
+  db.ref('south_walton/scrimmages').remove();
 }
 function fbSet(path,val){if(db)db.ref(DB_ROOT+'/'+path).set(val);}
 function fbRemove(path){if(db)db.ref(DB_ROOT+'/'+path).remove();}
@@ -1347,7 +1355,7 @@ function renderStandings(){
     const isLeon=name==='South Walton';
     h+=`<tr style="${isLeon?'background:var(--red-bg);font-weight:700;':''}">
       <td style="font-family:'Bebas Neue';font-size:14px;color:var(--gray);">${i+1}</td>
-      <td style="${isLeon?'color:var(--red);':''}font-weight:700;">${name}${isLeon?' 🌊':''}</td>
+      <td style="${isLeon?'color:var(--red);':''}font-weight:700;">${name}${isLeon?' 🦅':''}</td>
       <td style="font-family:'Bebas Neue';font-size:16px;color:var(--green);">${s.w}</td>
       <td style="font-family:'Bebas Neue';font-size:16px;color:var(--loss-red);">${s.l}</td>
       <td style="font-family:'Bebas Neue';font-size:14px;">${pct}</td>
@@ -1497,7 +1505,7 @@ async function fetchMaxPrepsStandings(){
     const isLeon=/leon/i.test(name);
     h+=`<tr style="${isLeon?'background:var(--red-bg);font-weight:700;':''}">
       <td style="font-family:'Bebas Neue';font-size:14px;color:var(--gray);">${i+1}</td>
-      <td style="${isLeon?'color:var(--red);':''}font-weight:700;">${name}${isLeon?' 🌊':''}</td>
+      <td style="${isLeon?'color:var(--red);':''}font-weight:700;">${name}${isLeon?' 🦅':''}</td>
       <td style="font-family:'Bebas Neue';font-size:16px;color:var(--green);">${w}</td>
       <td style="font-family:'Bebas Neue';font-size:16px;color:var(--loss-red);">${l}</td>
       <td style="font-family:'Bebas Neue';font-size:14px;">${pct}</td></tr>`;
@@ -2535,7 +2543,7 @@ function renderPlayerStandings(){
     const isLeon=name==='South Walton';
     h+=`<tr style="${isLeon?'background:var(--red-bg);font-weight:700;':''}">
       <td style="font-family:'Bebas Neue';font-size:14px;color:var(--gray);">${i+1}</td>
-      <td style="${isLeon?'color:var(--red);':''}font-weight:700;">${name}${isLeon?' 🌊':''}</td>
+      <td style="${isLeon?'color:var(--red);':''}font-weight:700;">${name}${isLeon?' 🦅':''}</td>
       <td style="font-family:'Bebas Neue';font-size:16px;color:var(--green);">${s.w}</td>
       <td style="font-family:'Bebas Neue';font-size:16px;color:var(--loss-red);">${s.l}</td>
       <td style="font-family:'Bebas Neue';font-size:14px;">${pct}</td></tr>`;
@@ -7061,7 +7069,7 @@ setTimeout(function(){
 <div id="sw-fans-overlay" style="display:none;position:fixed;inset:0;background:linear-gradient(160deg,#002e19 0%,#005B34 50%,#004526 100%);z-index:10000;overflow-y:auto;-webkit-overflow-scrolling:touch;">
   <div style="max-width:480px;margin:0 auto;padding:16px 14px 40px;">
     <div style="text-align:center;padding:24px 0 12px;">
-      <div style="font-size:48px;margin-bottom:6px;">&#x1F451;</div>
+      <div style="margin-bottom:8px;"><img src="seahawks-logo.png" style="height:80px;width:auto;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4));" alt="Seahawks"></div>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:3px;color:#fff;">South Walton Seahawks</div>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:rgba(255,255,255,0.65);margin-top:2px;">Beach Volleyball &middot; 2026 Season</div>
       <div id="lf-record" style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#d4a843;margin-top:8px;"></div>
