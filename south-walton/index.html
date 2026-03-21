@@ -1147,6 +1147,9 @@ function seedDB(){if(!db)return;
   db.ref('south_walton/matches').remove();
   db.ref('south_walton/gamedays').remove();
   db.ref('south_walton/scrimmages').remove();
+  // Clear Leon's schedule data
+  db.ref(DB_ROOT+'/schedule').remove();
+  db.ref(DB_ROOT+'/duals').remove();
 }
 function fbSet(path,val){if(db)db.ref(DB_ROOT+'/'+path).set(val);}
 function fbRemove(path){if(db)db.ref(DB_ROOT+'/'+path).remove();}
@@ -1385,7 +1388,7 @@ function renderStandings(){
 // ============================================================
 // MAXPREPS LIVE STANDINGS FETCH
 // ============================================================
-const MAXPREPS_URL='https://www.maxpreps.com/fl/tallahassee/leon-lions/beach-volleyball/';
+const MAXPREPS_URL='https://www.maxpreps.com/fl/santa-rosa-beach/south-walton-seahawks/beach-volleyball/';
 const PROXY_BASE='https://leon-beach-ai.markmcnees-479.workers.dev/proxy';
 
 async function fetchMaxPrepsStandings(){
