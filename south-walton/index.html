@@ -1076,6 +1076,11 @@ function initFB(){
 function setSS(on){const d=document.getElementById('sync-dot');d.className='sync-dot '+(on?'online':'offline');d.title=on?'Connected':'Offline';}
 function listenData(){if(!db)return;
   db.ref('south_walton_matches/config/coachPin').once('value',function(snap){if(snap.val())window._coachPin=snap.val();});
+  // Standings are shared with Leon (same area) - read from leon node
+  db.ref('leon_queens_matches/standings').on('value',snap=>{
+    D.standings=snap.val()||{};
+    if(currentTab==='dash')renderDash();
+  });
   db.ref(DB_ROOT).on('value',snap=>{
     const val=snap.val();
     const hasP=val&&val.players&&Object.keys(val.players).length>0;
@@ -1089,7 +1094,7 @@ function listenData(){if(!db)return;
       D.gamedays=val.gamedays?Object.values(val.gamedays):[];
       D.scrimmages=val.scrimmages?Object.values(val.scrimmages):[];
       D.schedule=val.schedule?Object.values(val.schedule):[];
-      D.standings=val.standings||{};
+      // D.standings handled by separate leon listener above
       D.goals=val.goals||{};
       D.assignments=val.assignments||{};
       D.duals=val.duals?Object.values(val.duals):[];
