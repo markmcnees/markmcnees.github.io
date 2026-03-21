@@ -1078,7 +1078,9 @@ function listenData(){if(!db)return;
   db.ref(DB_ROOT).on('value',snap=>{
     const val=snap.val();
     const hasP=val&&val.players&&Object.keys(val.players).length>0;
-    if(hasP){
+    const firstP=hasP?Object.values(val.players)[0]:null;
+    const isPlaceholder=firstP&&firstP.firstName==='Player';
+    if(hasP&&!isPlaceholder){
       D.players=Object.values(val.players);
       D.matches=val.matches?Object.values(val.matches):[];
       D.planned=val.planned?Object.values(val.planned):[];
@@ -1096,6 +1098,7 @@ function listenData(){if(!db)return;
       D.planned=[];D.gamedays=[];D.scrimmages=[];D.duals=[];
       seedDB();
     }
+    if(isPlaceholder){seedDB();}
     refreshCurrent();
     if(!_autoLoginDone){_autoLoginDone=true;autoLogin();}
   },err=>{console.error(err);setSS(false);});
