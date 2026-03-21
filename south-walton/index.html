@@ -1189,7 +1189,7 @@ function queensStats(pid,matches){
 function extStats(pid,matchList){
   let setsW=0,setsL=0,pf=0,pa=0,k=0,b=0,a=0,d=0,e=0,totalSets=0,matchesPlayed=0;
   matchList.forEach(m=>{
-    if(!(m.pair||[]).includes(pid))return;
+    const _pair=(m.pair||m.team1||[]);if(!_pair.includes(pid))return;
     matchesPlayed++;
     (m.sets||[]).forEach(s=>{
       const su=s.scoreUs||0,st=s.scoreThem||0;
@@ -6614,7 +6614,7 @@ function renderSWFans(){
   });
 
   var allSched=(D.schedule||[]).slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'');});
-  var schedPast=allSched.filter(function(g){return g.scoreUs!=null&&g.scoreUs!==''&&g.scoreThem!=null&&g.scoreThem!=='';});
+  var schedPast=allSched.filter(function(g){return g.type!=='scrimmage'&&g.scoreUs!=null&&g.scoreUs!==''&&g.scoreThem!=null&&g.scoreThem!=='';});
   var schedUpcoming=allSched.filter(function(g){return (g.scoreUs==null||g.scoreUs==='')&&g.date>=today;});
   var schedToday=allSched.find(function(g){return g.date===today;});
 
