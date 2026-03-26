@@ -1147,10 +1147,42 @@ function listenData(){if(!db)return;
     if(currentRole==='coach'){const t=document.querySelector('.tab.active');if(t&&t.dataset.tab==='goals')renderCoachGoals();}
   });
   db.ref('.info/connected').on('value',s=>{setSS(s.val()===true);});
-  db.ref(DB_ROOT+'/live_scoring').on('value',s=>{
-    D.liveScoring=s.val()||{};
+  db.ref(DB_ROOT+'/live_scoring').on('value',snap=>{
+    D.liveScoring=snap.val()||{};
     var fo=document.getElementById('sw-fans-overlay');
     if(fo&&fo.style.display!=='none')renderSWFans();
+    const today=td();
+    Object.entries(D.liveScoring).forEach(([idx,live])=>{
+      if(!live||live.date!==today)return;
+      if(currentRole==='coach'&&window._loadedAssignment){
+        const usEl=document.getElementById('ls-us-'+idx);
+        const themEl=document.getElementById('ls-them-'+idx);
+        if(usEl&&themEl){
+          if(usEl.tagName==='INPUT'){usEl.value=live.us;}else{usEl.textContent=live.us;}
+          if(themEl.tagName==='INPUT'){themEl.value=live.them;}else{themEl.textContent=live.them;}
+          const card=document.getElementById('lc-card-'+idx);
+          if(card&&live.scoredBy){
+            let lbl=card.querySelector('.live-scored-by');
+            if(!lbl){lbl=document.createElement('div');lbl.className='live-scored-by';lbl.style.cssText='font-size:10px;color:var(--gray);font-style:italic;text-align:center;margin-top:4px;';card.querySelector('.live-score-row')?.after(lbl);}
+            lbl.textContent='✎ '+live.scoredBy+' keeping score';
+          }
+        }
+      }
+      if(currentRole==='player'){
+        const usEl=document.getElementById('pp-us-'+idx);
+        const themEl=document.getElementById('pp-them-'+idx);
+        if(usEl&&themEl){
+          usEl.textContent=live.us;
+          themEl.textContent=live.them;
+          const card=document.getElementById('pp-lc-'+idx);
+          if(card&&live.scoredBy){
+            let lbl=card.querySelector('.live-scored-by');
+            if(!lbl){lbl=document.createElement('div');lbl.className='live-scored-by';lbl.style.cssText='font-size:10px;color:var(--gray);font-style:italic;text-align:center;margin-top:4px;';card.querySelector('.live-score-row')?.after(lbl);}
+            lbl.textContent='✎ '+live.scoredBy+' keeping score';
+          }
+        }
+      }
+    });
   });
 }
 function seedDB(){if(!db)return;
@@ -4704,6 +4736,73 @@ function loadLiveCourts(id){
   window._loadedAssignment=a;
   renderLiveScoring(a.date,a);
 }
+
+function applyLiveScoringToCounters(){
+  const today=td();
+  Object.entries(D.liveScoring||{}).forEach(([idx,live])=>{
+    if(!live||live.date!==today)return;
+    const cUs=document.getElementById('ls-us-'+idx);
+    const cThem=document.getElementById('ls-them-'+idx);
+    if(cUs&&cThem){
+      if(cUs.tagName==='INPUT'){cUs.value=live.us;}else{cUs.textContent=live.us;}
+      if(cThem.tagName==='INPUT'){cThem.value=live.them;}else{cThem.textContent=live.them;}
+      if(live.scoredBy){
+        const card=document.getElementById('lc-card-'+idx);
+        if(card){
+          let lbl=card.querySelector('.live-scored-by');
+          if(!lbl){lbl=document.createElement('div');lbl.className='live-scored-by';lbl.style.cssText='font-size:10px;color:var(--gray);font-style:italic;text-align:center;margin-top:4px;';card.querySelector('.live-score-row')?.after(lbl);}
+          lbl.textContent='✎ '+live.scoredBy+' keeping score';
+        }
+      }
+    }
+    const pUs=document.getElementById('pp-us-'+idx);
+    const pThem=document.getElementById('pp-them-'+idx);
+    if(pUs&&pThem){
+      pUs.textContent=live.us;
+      pThem.textContent=live.them;
+      if(live.scoredBy){
+        const card=document.getElementById('pp-lc-'+idx);
+        if(card){
+          let lbl=card.querySelector('.live-scored-by');
+          if(!lbl){lbl=document.createElement('div');lbl.className='live-scored-by';lbl.style.cssText='font-size:10px;color:var(--gray);font-style:italic;text-align:center;margin-top:4px;';card.querySelector('.live-score-row')?.after(lbl);}
+          lbl.textContent='✎ '+live.scoredBy+' keeping score';
+        }
+      }
+    }
+  });
+}
+
+function closeDual(){
+  const a=window._loadedAssignment;
+  if(!a){toast('No assignment loaded');return;}
+  const date=a.date||td();
+  const opponent=a.opponent||'Opponent';
+  const aType=a.type||'gameday';
+  if(aType==='scrimmage'||aType==='queens'){toast('Close Dual is for season games only');return;}
+  let leonCourts=0,oppCourts=0;
+  const courts=(a.courts||[]).filter(c=>(c.court||0)<=5);
+  courts.forEach(c=>{
+    const m=D.gamedays.find(gd=>gd.date===date&&arrEq(gd.pair||[],[c.p1,c.p2].filter(Boolean)));
+    if(!m||(m.sets||[]).length===0)return;
+    const sets=m.sets||[];
+    const sw=sets.filter(s=>(s.scoreUs||0)>(s.scoreThem||0)).length;
+    const sl=sets.length-sw;
+    if(sw>sl)leonCourts++;else if(sl>sw)oppCourts++;
+  });
+  const dualWin=leonCourts>oppCourts;
+  const loc=a.location||'home';
+  const dualId='dual-'+date+'-'+opponent.toLowerCase().replace(/[^a-z0-9]/g,'');
+  const existing=D.duals.find(d=>d.date===date&&(d.opponent||'').toLowerCase()===opponent.toLowerCase());
+  const id=existing?existing.id:dualId;
+  fbSet('duals/'+id,{id,date,opponent,location:loc,leonCourts,oppCourts,dualWin,createdAt:existing?existing.createdAt:td()});
+  const schedMatch=(D.schedule||[]).find(g=>g.date===date&&(g.opponent||'').toLowerCase()===opponent.toLowerCase());
+  if(schedMatch){
+    fbSet('schedule/'+schedMatch.id+'/scoreUs',leonCourts);
+    fbSet('schedule/'+schedMatch.id+'/scoreThem',oppCourts);
+  }
+  if(db)db.ref(DB_ROOT+'/live_scoring').remove();
+  toast('Dual closed! Leon '+leonCourts+' – Opp '+oppCourts+' ('+(dualWin?'WIN':'LOSS')+')');
+}
 function renderLiveScoring(dateOverride,assignOverride){
   const date=dateOverride||td();
   const container=document.getElementById('live-courts-container');
@@ -4810,7 +4909,11 @@ function renderLiveScoring(dateOverride,assignOverride){
     h+='</div>';
   });
 
+  h+=`<div style="margin-top:16px;padding:0 4px;">
+    <button class="btn btn-red" style="width:100%;padding:12px;font-size:15px;font-family:'Bebas Neue',sans-serif;letter-spacing:1px;" onclick="closeDual()">&#10003; Close Dual &amp; Save Result</button>
+  </div>`;
   container.innerHTML=h;
+  applyLiveScoringToCounters();
 }
 
 if(!window._lsLiveDebounce)window._lsLiveDebounce={};
@@ -4858,11 +4961,13 @@ function lsAdj(id,delta){
   }
 }
 function pushLiveScore(idx){
-  if(!db||!window._loadedAssignment)return;
-  const a=window._loadedAssignment,date=a.date||td(),aType=a.type||'gameday';
+  if(!db)return;
+  const a=window._loadedAssignment||Object.values(D.assignments).find(x=>x.date===td());
+  if(!a)return;
+  const date=a.date||td(),aType=a.type||'gameday';
   const c=(a.courts||[])[idx];if(!c)return;
-  let usEl=document.getElementById('ls-us-'+idx)||document.getElementById('qls-a-'+idx);
-  let themEl=document.getElementById('ls-them-'+idx)||document.getElementById('qls-b-'+idx);
+  let usEl=document.getElementById('ls-us-'+idx)||document.getElementById('qls-a-'+idx)||document.getElementById('pp-us-'+idx);
+  let themEl=document.getElementById('ls-them-'+idx)||document.getElementById('qls-b-'+idx)||document.getElementById('pp-them-'+idx);
   if(!usEl||!themEl)return;
   const us=parseInt(usEl.tagName==='INPUT'?usEl.value:usEl.textContent)||0;
   const them=parseInt(themEl.tagName==='INPUT'?themEl.value:themEl.textContent)||0;
@@ -4873,7 +4978,8 @@ function pushLiveScore(idx){
     ?D.matches.find(m=>m.date===date&&(arrEq(m.team1||[],[c.p1,c.p2].filter(Boolean))||arrEq(m.team2||[],[c.p1,c.p2].filter(Boolean))))
     :matchList.find(m=>m.date===date&&arrEq(m.pair||[],[c.p1,c.p2].filter(Boolean)));
   const setNum=existing?(existing.sets||[]).length+1:1;
-  db.ref(DB_ROOT+'/live_scoring/'+idx).set({us,them,setNum,pairLabel,court:c.court,date,ts:Date.now()});
+  const scoredBy=currentPlayerId?((gP(currentPlayerId)||{}).firstName||'Player'):'Coach';
+  db.ref(DB_ROOT+'/live_scoring/'+idx).set({us,them,setNum,pairLabel,court:c.court,date,ts:Date.now(),scoredBy});
 }
 function lsInpChange(id){
   const inp=document.getElementById(id+'-inp');
@@ -5760,6 +5866,12 @@ function getDualRecord(){
   let w=0,l=0;
   // Dual W-L: from schedule (dual-level wins, exclude scrimmages)
   (D.schedule||[]).forEach(g=>{if(g.type==='scrimmage')return;if(g.scoreUs!=null&&g.scoreThem!=null&&g.scoreUs!==''&&g.scoreThem!==''){parseInt(g.scoreUs)>parseInt(g.scoreThem)?w++:l++;}});
+  // Also count from D.duals that have no matching schedule entry with scores
+  (D.duals||[]).forEach(d=>{
+    if(d.leonCourts==null&&d.oppCourts==null)return;
+    const hasSchedEntry=(D.schedule||[]).some(g=>g.type!=='scrimmage'&&g.date===d.date&&(g.opponent||'').toLowerCase()===(d.opponent||'').toLowerCase()&&g.scoreUs!=null&&g.scoreUs!=='');
+    if(!hasSchedEntry){d.dualWin?w++:l++;}
+  });
 
   // Match W-L (court-level): sum scoreUs/scoreThem from schedule, exclude scrimmages
   let cw=0,cl=0;
@@ -5863,10 +5975,14 @@ function renderDuals(){
   // Merge structured duals + gameday-derived duals, deduplicate by date+opponent
   const gdDuals=buildDualsFromGamedays();
   const structuredDuals=D.duals||[];
-  // Index structured duals by date+opponent so we can skip gdDuals that are already covered
-  const structuredKeys=new Set(structuredDuals.map(d=>(d.date||'')+'||'+(d.opponent||'').toLowerCase()));
+  const enrichedStructured=structuredDuals.map(d=>{
+    if((d.courts||[]).length>0)return d;
+    const gdMatch=gdDuals.find(g=>(g.date||'')===(d.date||'')&&(g.opponent||'').toLowerCase()===(d.opponent||'').toLowerCase());
+    return gdMatch?{...d,courts:gdMatch.courts||[]}:d;
+  });
+  const structuredKeys=new Set(enrichedStructured.map(d=>(d.date||'')+'||'+(d.opponent||'').toLowerCase()));
   const merged=[
-    ...structuredDuals,
+    ...enrichedStructured,
     ...gdDuals.filter(d=>!structuredKeys.has((d.date||'')+'||'+(d.opponent||'').toLowerCase()))
   ].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
 
@@ -6299,6 +6415,7 @@ function renderPlayerLiveScoring(){
     </div></div>`;
   });
   container.innerHTML=h;
+  applyLiveScoringToCounters();
 }
 
 function ppLoadCourts(assignmentId){
