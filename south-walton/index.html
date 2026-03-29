@@ -1009,6 +1009,14 @@ body{font-family:'Barlow',sans-serif;background:var(--cream);color:var(--black);
 <div class="toast" id="toast"></div>
 
 
+    <!-- Hidden inputs for court assignment scanner -->
+    <input type="file" id="ca-file" accept="image/*" capture="environment" style="display:none;">
+    <input type="date" id="ca-date" style="display:none;">
+    <input type="text" id="ca-opp" style="display:none;">
+    <select id="ca-type" style="display:none;"><option value="gameday">Dual</option><option value="scrimmage">Scrimmage</option><option value="queens">Queens</option></select>
+    <select id="ca-team" style="display:none;"><option value="mine">My Sheet</option><option value="opponent">Opponent's Sheet</option></select>
+    <div id="ca-preview" style="display:none;"></div>
+    <div id="ca-result" style="margin-top:10px;"></div>
 <script>
 window.SCHOOL_CONFIG={schoolName:'South Walton Seahawks',shortName:'South Walton',abbrev:'SW',displayName:'SW Beach',title:'South Walton Beach Volleyball Tracker',coachPin:'1234',defaultPw:'Sideout',fbConfig:{apiKey:'AIzaSyC8Ue06XPvGXo1XTloewPvDRBWtK5tDAj8',authDomain:'leon-beach-volleyball.firebaseapp.com',databaseURL:'https://leon-beach-volleyball-default-rtdb.firebaseio.com',projectId:'leon-beach-volleyball',storageBucket:'leon-beach-volleyball.firebasestorage.app',messagingSenderId:'937804799976',appId:'1:937804799976:web:02121e68655b4febeb8e5d'},dbRoots:{matches:'south_walton_matches',profiles:'south_walton',passwords:'south_walton_passwords'},logo:'seahawks-logo.png',logoAlt:'Seahawks',colors:{primary:'#005B34',primaryDark:'#004026',primaryDeeper:'#002918',primaryLight:'#1a8a56',primaryBg:'#e6f2ec'},aiProxyUrl:'https://beach-volleyball-ai.markmcnees-479.workers.dev',maxPrepsUrl:'https://www.maxpreps.com/fl/santa-rosa-beach/south-walton-seahawks/beach-volleyball/',profilesUrl:'https://markmcnees.github.io/south-walton/profiles.html',courtsenseUrl:'https://markmcnees.github.io/leon-beach/courtsense.html',myStandingsKey:'South Walton',exportPrefix:'south_walton_',legacyMigration:false};
 </script>
@@ -1068,13 +1076,4 @@ window.SCHOOL_CONFIG={schoolName:'South Walton Seahawks',shortName:'South Walton
     </div>
   </div>
 </div>
-
-    <!-- Hidden inputs for court assignment scanner -->
-    <input type="file" id="ca-file" accept="image/*" capture="environment" style="display:none;">
-    <input type="date" id="ca-date" style="display:none;">
-    <input type="text" id="ca-opp" style="display:none;">
-    <select id="ca-type" style="display:none;"><option value="gameday">Dual</option><option value="scrimmage">Scrimmage</option><option value="queens">Queens</option></select>
-    <select id="ca-team" style="display:none;"><option value="mine">My Sheet</option><option value="opponent">Opponent's Sheet</option></select>
-    <div id="ca-preview" style="display:none;"></div>
-    <div id="ca-result" style="margin-top:10px;"></div>
 </body></html>
